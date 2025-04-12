@@ -17,7 +17,36 @@ const setupSwagger = (app: Application) => {
         description: 'API for managing products',
       },
       components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
         schemas: {
+          LoginRequest: {
+            type: 'object',
+            properties: {
+              username: {
+                type: 'string',
+                example: 'admin',
+              },
+              password: {
+                type: 'string',
+                example: 'password123',
+              },
+            },
+          },
+          LoginResponse: {
+            type: 'object',
+            properties: {
+              accessToken: {
+                type: 'string',
+                example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNjMwODAxNjE0fQ.X29hZ...9Hs9X4P5o',
+              },
+            },
+          },
           Product: {
             type: 'object',
             properties: {
@@ -32,7 +61,7 @@ const setupSwagger = (app: Application) => {
         },
       },
     },
-    apis: ['./src/products/*.ts'], 
+    apis: ['./src/auth/*.ts', './src/products/*.ts'] 
   };
 
   const swaggerSpec = swaggerJSDoc(swaggerOptions);

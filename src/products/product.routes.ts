@@ -10,6 +10,7 @@ import {
 } from './product.controller';
 import { CreateProductDto } from './product.dto';
 import { validateDto } from '../utils/validation.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -19,6 +20,8 @@ const router = Router();
  *   get:
  *     summary: Get all products
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of all products
@@ -27,7 +30,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Product'
  */
-router.get('/', getAllProducts);
+router.get('/',verifyToken, getAllProducts);
 
 /**
  * @swagger
@@ -35,6 +38,8 @@ router.get('/', getAllProducts);
  *   get:
  *     summary: Get product metrics
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Product metrics
@@ -54,7 +59,7 @@ router.get('/', getAllProducts);
  *                 average_price:
  *                   type: number
  */
-router.get('/metrics', getProductMetrics);
+router.get('/metrics',verifyToken, getProductMetrics);
 
 /**
  * @swagger
@@ -62,6 +67,8 @@ router.get('/metrics', getProductMetrics);
  *   get:
  *     summary: Get products by category
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     description: Returns a list of products that belong to the specified category.
  *     parameters:
  *       - in: path
@@ -80,7 +87,7 @@ router.get('/metrics', getProductMetrics);
  *               items:
  *                 $ref: '#/components/schemas/Product'
  */
-router.get('/category/:category', getProductsByCategory);
+router.get('/category/:category', verifyToken, getProductsByCategory);
 
 /**
  * @swagger
@@ -88,6 +95,8 @@ router.get('/category/:category', getProductsByCategory);
  *   get:
  *     summary: Get a product by ID
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -113,7 +122,7 @@ router.get('/category/:category', getProductsByCategory);
  *                   type: string
  *                   example: product not found
  */
-router.get('/:id', getProductById);
+router.get('/:id',verifyToken, getProductById);
 
 /**
  * @swagger
@@ -121,6 +130,8 @@ router.get('/:id', getProductById);
  *   post:
  *     summary: Create a new product
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -156,7 +167,7 @@ router.get('/:id', getProductById);
  *                 message:
  *                   type: string
  */
-router.post('/', validateDto(CreateProductDto), createProduct);
+router.post('/', validateDto(CreateProductDto), verifyToken, createProduct);
 
 /**
  * @swagger
@@ -164,6 +175,8 @@ router.post('/', validateDto(CreateProductDto), createProduct);
  *   put:
  *     summary: Update a product by ID
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -194,7 +207,7 @@ router.post('/', validateDto(CreateProductDto), createProduct);
  *                 message:
  *                   type: string
  */
-router.put('/:id',validateDto(CreateProductDto), updateProduct);
+router.put('/:id',validateDto(CreateProductDto), verifyToken, updateProduct);
 
 /**
  * @swagger
@@ -202,6 +215,8 @@ router.put('/:id',validateDto(CreateProductDto), updateProduct);
  *   delete:
  *     summary: Delete a product by ID
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -223,6 +238,6 @@ router.put('/:id',validateDto(CreateProductDto), updateProduct);
  *                   type: string
  *                   example: product not found
  */
-router.delete('/:id', deleteProduct);
+router.delete('/:id', verifyToken, deleteProduct);
 
 export default router; 

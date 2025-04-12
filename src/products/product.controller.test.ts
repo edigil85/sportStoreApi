@@ -2,14 +2,29 @@ import request from 'supertest';
 import app from '../index';
 
 let createdId: string;
+let token: string;
+
+beforeAll(async () => {
+  const response = await request(app).post('/auth/login').send({
+    username: 'admin',
+    password: 'password123',
+  });
+  if (response.status === 200) {
+    token = response.body.token;
+  } else {
+    throw new Error('Failed to obtain token');
+  }
+});
 
 describe('Product Controller', () => {
+
   it('should create a product', async () => {
     const response = await request(app)
       .post('/products')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Balón Adidas',
-        category: 'Fútbol',
+        category: 'Fútbol', 
         price: 99.99,
         stock: 10,
         brand: 'Adidas',
@@ -22,21 +37,21 @@ describe('Product Controller', () => {
     createdId = response.body.id; 
     console.log('Created product ID:', createdId); 
   });
-
   it('should get all products', async () => {
-    const response = await request(app).get('/products');
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
   });
 
+  
   it('should get a product by ID', async () => {
-    const response = await request(app).get(`/products/${createdId}`);
+    const response = await request(app).get(`/products/${createdId}`).set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.id).toBe(createdId);
   });
 
   it('should get products by category', async () => {
-    const response = await request(app).get('/products/category/Fútbol');
+    const response = await request(app).get('/products/category/Fútbol').set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body[0].category).toBe('Fútbol');
@@ -45,6 +60,7 @@ describe('Product Controller', () => {
   it('should update a product', async () => {
     const response = await request(app)
       .put(`/products/${createdId}`)
+	  .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Balón Adidas',
         category: 'Fútbol',
@@ -57,7 +73,7 @@ describe('Product Controller', () => {
   });
 
   it('should return product metrics', async () => {
-    const response = await request(app).get('/products/metrics');
+    const response = await request(app).get('/products/metrics').set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('total_products');
     expect(response.body).toHaveProperty('top_categories');
@@ -66,12 +82,12 @@ describe('Product Controller', () => {
   });
 
   it('should delete a product', async () => {
-    const response = await request(app).delete(`/products/${createdId}`);
+    const response = await request(app).delete(`/products/${createdId}`).set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(204);
   });
 
   it('should return 404 if product is not found', async () => {
-    const response = await request(app).get(`/products/${createdId}`);
+    const response = await request(app).get(`/products/${createdId}`).set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(404);
     expect(response.body.message).toBe('Product not found');
   });
@@ -79,6 +95,7 @@ describe('Product Controller', () => {
   it('should fail to create a product with negative stock', async () => {
     const response = await request(app)
       .post('/products')
+	  .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Guantes Nike',
         category: 'Boxeo',
@@ -94,6 +111,7 @@ describe('Product Controller', () => {
   it('should fail to create a product with negative price', async () => {
     const response = await request(app)
       .post('/products')
+	  .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Raqueta Wilson',
         category: 'Tenis',
@@ -110,6 +128,7 @@ describe('Product Controller', () => {
     const longName = 'a'.repeat(101);
     const response = await request(app)
       .post('/products')
+	  .set('Authorization', `Bearer ${token}`)
       .send({
         name: longName,
         category: 'Fútbol',
@@ -126,6 +145,7 @@ describe('Product Controller', () => {
     const longBrand = 'a'.repeat(51);
     const response = await request(app)
       .post('/products')
+	  .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Balón Adidas',
         category: 'Fútbol',
@@ -142,6 +162,7 @@ describe('Product Controller', () => {
     const longCategory = 'a'.repeat(51);
     const response = await request(app)
       .post('/products')
+	  .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Zapatillas Puma',
         category: longCategory,
@@ -153,4 +174,5 @@ describe('Product Controller', () => {
     expect(response.status).toBe(400);
     expect(response.body).toHaveProperty('message');
   });
+
 });
