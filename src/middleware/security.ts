@@ -1,4 +1,3 @@
-// src/middleware/security.ts
 import helmet from 'helmet';
 import { Express } from 'express';
 

@@ -155,10 +155,9 @@ router.get('/:id',verifyToken, getProductById);
  *         content:
  *           application/json:
  *             schema:
- *                $ref: '#/components/schemas/Product'
- *               
+ *               $ref: '#/components/schemas/Product'
  *       400:
- *         description: Invalid input data
+ *         description: Invalid input data or product name already exists
  *         content:
  *           application/json:
  *             schema:
@@ -166,6 +165,10 @@ router.get('/:id',verifyToken, getProductById);
  *               properties:
  *                 message:
  *                   type: string
+ *                   oneOf :
+ *                     - example: El producto con el nombre "Balón Nike Preter" ya existe.
+ *                     - example: validation failed
+ *                     
  */
 router.post('/', validateDto(CreateProductDto), verifyToken, createProduct);
 

@@ -1,64 +1,70 @@
-import { Product } from './product.model';
-import { randomUUID } from 'crypto';
+import { Product } from './product.entity';
+import { AppDataSource } from '../../ormconfig';
+import { Repository } from 'typeorm';
+import { ObjectId } from 'mongodb';
+import { DatabaseService } from '../database/database.service';
 
-let products: Product[] = [];
+const productRepository: Repository<Product> = AppDataSource.getRepository(Product);
 
-export const ProductService = {
-  getAll: (): Product[] => products,
+export const createProductService = (dbService: DatabaseService) => {
+  return {
+    getAll: async (): Promise<any[]> => {
+      const products = await productRepository.find();
+      return products.map(p => ({ ...p, id: p.id.toString() }));
+    },
 
-  getById: (id: string): Product | undefined =>
-    products.find((p) => p.id === id),
+    getById: async (id: string): Promise<Product | null> => {
+      const objectId = new ObjectId(id);
+      return await productRepository.findOneBy({ _id: objectId } as any);
+    },
 
-  getByCategory: (category: string): Product[] =>
-    products.filter((p) => p.category.toLowerCase() === category.toLowerCase()),
+    getByCategory: async (category: string): Promise<Product[]> => {
+      return await productRepository.find({ where: { category } });
+    },
 
-  create: (data: Omit<Product, 'id'>): Product => {
-    const newProduct: Product = { id: randomUUID(), ...data };
-    products.push(newProduct);
-    return newProduct;
-  },
+    create: async (data: Omit<Product, 'id'>): Promise<Product> => {
+      const exists = await productRepository.findOneBy({ name: data.name });
+      if (exists) throw new Error(`El producto con el nombre "${data.name}" ya existe.`);
+      const newProduct = productRepository.create(data);
+      return await productRepository.save(newProduct);
+    },
 
-  update: (id: string, data: Partial<Omit<Product, 'id'>>): Product | null => {
-    const index = products.findIndex((p) => p.id === id);
-    if (index === -1) return null;
-    products[index] = { ...products[index], ...data };
-    return products[index];
-  },
+    update: async (id: string, data: Partial<Omit<Product, 'id'>>): Promise<Product | null> => {
+      const objectId = new ObjectId(id);
+      const product = await productRepository.findOneBy({ _id: objectId } as any);
+      if (!product) return null;
+      return await productRepository.save({ ...product, ...data });
+    },
 
-  delete: (id: string): boolean => {
-    const index = products.findIndex((p) => p.id === id);
-    if (index === -1) return false;
-    products.splice(index, 1);
-    return true;
-  },
+    delete: async (id: string): Promise<boolean> => {
+      const result = await productRepository.delete(id);
+      return !!(result.affected && result.affected > 0);
+    },
 
-  getMetrics: () => {
-    const totalProducts = products.length;
-    const totalStock = products.reduce((acc, product) => acc + product.stock, 0);
+    getMetrics: async () => {
+      const collection = await dbService.getCollection('product');
 
-    const averagePrice =
-      totalProducts > 0
-        ? products.reduce((acc, product) => acc + product.price, 0) / totalProducts
-        : 0;
+      const totalProducts = await collection.countDocuments();
+      
+      const totalStockResult = await collection.aggregate([
+        { $group: { _id: null, totalStock: { $sum: '$stock' } } },
+      ]).toArray();
 
-    const categoryMap: Record<string, number> = {};
+      const averagePriceResult = await collection.aggregate([
+        { $group: { _id: null, averagePrice: { $avg: '$price' } } },
+      ]).toArray();
 
-    for (const product of products) {
-      categoryMap[product.category] = (categoryMap[product.category] || 0) + 1;
-    }
+      const categories = await collection.aggregate([
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]).toArray();
 
-    const topCategories = Object.entries(categoryMap)
-      .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count);
-
-    return {
-      total_products: totalProducts,
-      top_categories: topCategories,
-      total_stock: totalStock,
-      average_price: Number(averagePrice.toFixed(2)),
-    };
-  },
-
-
-
+      return {
+        total_products: totalProducts,
+        total_stock: totalStockResult[0]?.totalStock || 0,
+        average_price: averagePriceResult[0]?.averagePrice?.toFixed(2) || '0.00',
+        top_categories: categories.map(cat => cat._id),
+      };
+    },
+  };
 };
